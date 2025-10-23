@@ -8,3 +8,4 @@ lab2
 ![alt text](image-2.png)
 
 lab3
+![alt text](image-3.png)
