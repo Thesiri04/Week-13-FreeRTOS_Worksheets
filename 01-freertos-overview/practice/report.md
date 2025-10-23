@@ -11,3 +11,6 @@ lab3
 ![alt text](image-3.png)
 Task Priorities
 ![alt text](image-4.png)
+Ex1
+![alt text](image-5.png)
+Ex2

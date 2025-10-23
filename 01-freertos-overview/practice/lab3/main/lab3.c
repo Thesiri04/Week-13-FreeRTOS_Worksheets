@@ -185,7 +185,20 @@ void runtime_stats_task(void *pvParameters)
     free(buffer);
 }
 
-
+void temporary_task(void *pvParameters)
+{
+    int *duration = (int *)pvParameters;
+    
+    ESP_LOGI(TAG, "Temporary task will run for %d seconds", *duration);
+    
+    for (int i = *duration; i > 0; i--) {
+        ESP_LOGI(TAG, "Temporary task countdown: %d", i);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    
+    ESP_LOGI(TAG, "Temporary task self-deleting");
+    vTaskDelete(NULL); // Delete itself
+}
 
 
 // ===== app_main =====
@@ -228,6 +241,9 @@ void app_main(void)
     xTaskCreate(high_priority_task, "HighPriority", 2048, NULL, 3, NULL);
     xTaskCreate(low_priority_task, "LowPriority", 2048, NULL, 1, NULL);
     xTaskCreate(runtime_stats_task, "RuntimeStats", 4096, NULL, 2, NULL);
+
+    static int temp_duration = 10;
+    xTaskCreate(temporary_task, "TempTask", 2048, &temp_duration, 1, NULL);
 
     ESP_LOGI(TAG, "All tasks created. Main task idling...");
     while (1) {
