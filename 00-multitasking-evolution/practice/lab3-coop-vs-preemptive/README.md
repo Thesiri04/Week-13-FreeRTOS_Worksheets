@@ -300,10 +300,15 @@ void app_main(void)
 ## คำถามสำหรับวิเคราะห์
 
 1. ระบบไหนมีเวลาตอบสนองดีกว่า? เพราะอะไร?
+Preemptive ดีกว่า เพราะ RTOS preempt งานสำคัญได้ทันที
 2. ข้อดีของ Cooperative Multitasking คืออะไร?
+ไม่ซับซ้อน
 3. ข้อเสียของ Cooperative Multitasking คืออะไร?
+Response time ไม่แน่นอน
 4. ในสถานการณ์ใดที่ Cooperative จะดีกว่า Preemptive?
+ระบบที่ไม่ต้องการ real-time
 5. เหตุใด Preemptive จึงเหมาะสำหรับ Real-time systems?
+มี priority-based scheduling
 
 ## ผลการทดลองที่คาดหวัง
 
