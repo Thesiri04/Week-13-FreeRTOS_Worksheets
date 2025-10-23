@@ -9,3 +9,5 @@ lab2
 
 lab3
 ![alt text](image-3.png)
+Task Priorities
+![alt text](image-4.png)
