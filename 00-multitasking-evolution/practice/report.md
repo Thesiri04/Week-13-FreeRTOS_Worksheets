@@ -17,3 +17,6 @@ Part 3
 
 
 lab3
+Part 1: Cooperative Multitasking
+![alt text](image-5.png)
+Part 2: Preemptive Multitasking
