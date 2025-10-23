@@ -129,6 +129,44 @@ void manual_scheduler(void)
     
     task_counter++;
 }
+// เพิ่มในส่วนท้ายของไฟล์ก่อนหน้า
+
+// Variable time slice experiment
+void variable_time_slice_experiment(void)
+{
+    ESP_LOGI(TAG, "\n=== Variable Time Slice Experiment ===");
+    
+    // Test different time slices
+    uint32_t time_slices[] = {10, 25, 50, 100, 200};
+    int num_slices = sizeof(time_slices) / sizeof(time_slices[0]);
+    
+    for (int i = 0; i < num_slices; i++) {
+        ESP_LOGI(TAG, "Testing time slice: %d ms", time_slices[i]);
+        
+        // Reset counters
+        context_switches = 0;
+        context_switch_time = 0;
+        task_counter = 0;
+        
+        uint64_t test_start = esp_timer_get_time();
+        
+        // Run for 5 seconds
+        for (int j = 0; j < 50; j++) {
+            manual_scheduler();
+            vTaskDelay(pdMS_TO_TICKS(time_slices[i]));
+        }
+        
+        uint64_t test_end = esp_timer_get_time();
+        uint64_t test_duration = test_end - test_start;
+        
+        float efficiency = ((float)context_switch_time / (float)test_duration) * 100.0f;
+        
+        ESP_LOGI(TAG, "Time slice %d ms: Efficiency %.1f%%", time_slices[i], efficiency);
+        ESP_LOGI(TAG, "Context switches: %d", context_switches);
+        
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Pause between tests
+    }
+}
 
 void app_main(void)
 {
@@ -149,29 +187,30 @@ void app_main(void)
     uint64_t start_time = esp_timer_get_time();
     uint32_t round_count = 0;
 
-    while (1) {
-        manual_scheduler();
-        
-        // Wait for time slice
-        vTaskDelay(pdMS_TO_TICKS(TIME_SLICE_MS));
-        
-        // Report statistics every 20 context switches
-        if (context_switches % 20 == 0) {
-            round_count++;
-            uint64_t current_time = esp_timer_get_time();
-            uint64_t total_time = current_time - start_time;
-            
-            float cpu_utilization = ((float)(context_switch_time) / (float)(total_time)) * 100.0f;
-            float overhead_percentage = 100.0f - cpu_utilization;
-            
-            ESP_LOGI(TAG, "=== Round %d Statistics ===", round_count);
-            ESP_LOGI(TAG, "Context switches: %d", context_switches);
-            ESP_LOGI(TAG, "Total time: %lld us", total_time);
-            ESP_LOGI(TAG, "Task execution time: %lld us", context_switch_time);
-            ESP_LOGI(TAG, "CPU utilization: %.1f%%", cpu_utilization);
-            ESP_LOGI(TAG, "Overhead: %.1f%%", overhead_percentage);
-            ESP_LOGI(TAG, "Avg time per task: %lld us", context_switch_time / context_switches);
-        }
-    }
-}
+    variable_time_slice_experiment();
 
+    // while (1) {
+    //     manual_scheduler();
+        
+    //     // Wait for time slice
+    //     vTaskDelay(pdMS_TO_TICKS(TIME_SLICE_MS));
+        
+    //     // Report statistics every 20 context switches
+    //     if (context_switches % 20 == 0) {
+    //         round_count++;
+    //         uint64_t current_time = esp_timer_get_time();
+    //         uint64_t total_time = current_time - start_time;
+            
+    //         float cpu_utilization = ((float)(context_switch_time) / (float)(total_time)) * 100.0f;
+    //         float overhead_percentage = 100.0f - cpu_utilization;
+            
+    //         ESP_LOGI(TAG, "=== Round %d Statistics ===", round_count);
+    //         ESP_LOGI(TAG, "Context switches: %d", context_switches);
+    //         ESP_LOGI(TAG, "Total time: %lld us", total_time);
+    //         ESP_LOGI(TAG, "Task execution time: %lld us", context_switch_time);
+    //         ESP_LOGI(TAG, "CPU utilization: %.1f%%", cpu_utilization);
+    //         ESP_LOGI(TAG, "Overhead: %.1f%%", overhead_percentage);
+    //         ESP_LOGI(TAG, "Avg time per task: %lld us", context_switch_time / context_switches);
+    //     }
+    // }
+}
