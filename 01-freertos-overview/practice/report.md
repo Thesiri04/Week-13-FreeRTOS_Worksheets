@@ -14,3 +14,4 @@ Task Priorities
 Ex1
 ![alt text](image-5.png)
 Ex2
+![alt text](image-6.png)

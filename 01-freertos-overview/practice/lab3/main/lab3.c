@@ -201,6 +201,32 @@ void temporary_task(void *pvParameters)
 }
 
 
+// Global variable for simple communication
+volatile int shared_counter = 0;
+
+void producer_task(void *pvParameters)
+{
+    while (1) {
+        shared_counter++;
+        ESP_LOGI(TAG, "Producer: counter = %d", shared_counter);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void consumer_task(void *pvParameters)
+{
+    int last_value = 0;
+    
+    while (1) {
+        if (shared_counter != last_value) {
+            ESP_LOGI(TAG, "Consumer: received %d", shared_counter);
+            last_value = shared_counter;
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+
 // ===== app_main =====
 void app_main(void)
 {
@@ -235,15 +261,17 @@ void app_main(void)
 
     // --- Create Task Manager ---
     TaskHandle_t task_handles[2] = {led1_handle, led2_handle};
-    xTaskCreate(task_manager, "TaskManager", 2048, task_handles, 3, NULL);
+    // xTaskCreate(task_manager, "TaskManager", 2048, task_handles, 3, NULL);
 
     // --- Additional Tasks ---
-    xTaskCreate(high_priority_task, "HighPriority", 2048, NULL, 3, NULL);
-    xTaskCreate(low_priority_task, "LowPriority", 2048, NULL, 1, NULL);
-    xTaskCreate(runtime_stats_task, "RuntimeStats", 4096, NULL, 2, NULL);
+    // xTaskCreate(high_priority_task, "HighPriority", 2048, NULL, 3, NULL);
+    // xTaskCreate(low_priority_task, "LowPriority", 2048, NULL, 1, NULL);
+    // xTaskCreate(runtime_stats_task, "RuntimeStats", 4096, NULL, 2, NULL);
 
     static int temp_duration = 10;
-    xTaskCreate(temporary_task, "TempTask", 2048, &temp_duration, 1, NULL);
+    // xTaskCreate(temporary_task, "TempTask", 2048, &temp_duration, 1, NULL);
+    xTaskCreate(producer_task, "Producer", 2048, NULL, 2, NULL);
+    xTaskCreate(consumer_task, "Consumer", 2048, NULL, 2, NULL);
 
     ESP_LOGI(TAG, "All tasks created. Main task idling...");
     while (1) {
