@@ -168,6 +168,28 @@ void variable_time_slice_experiment(void)
     }
 }
 
+// Problem demonstration
+void demonstrate_problems(void)
+{
+    ESP_LOGI(TAG, "\n=== Demonstrating Time-Sharing Problems ===");
+    
+    // Problem 1: Priority Inversion
+    ESP_LOGI(TAG, "Problem 1: No priority support");
+    ESP_LOGI(TAG, "Critical task must wait for less important tasks");
+    
+    // Problem 2: Fixed time slice issues
+    ESP_LOGI(TAG, "Problem 2: Fixed time slice problems");
+    ESP_LOGI(TAG, "Short tasks waste time, long tasks get interrupted");
+    
+    // Problem 3: Context switching overhead
+    ESP_LOGI(TAG, "Problem 3: Context switching overhead");
+    ESP_LOGI(TAG, "Time wasted in switching between tasks");
+    
+    // Problem 4: No inter-task communication
+    ESP_LOGI(TAG, "Problem 4: No proper inter-task communication");
+    ESP_LOGI(TAG, "Tasks cannot communicate safely");
+}
+
 void app_main(void)
 {
     // GPIO Configuration
@@ -183,6 +205,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Time-Sharing System Started");
     ESP_LOGI(TAG, "Time slice: %d ms", TIME_SLICE_MS);
+
+    demonstrate_problems();
 
     uint64_t start_time = esp_timer_get_time();
     uint32_t round_count = 0;
