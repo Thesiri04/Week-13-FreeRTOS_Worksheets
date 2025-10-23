@@ -1,0 +1,83 @@
+# Top-level .gitignore for Week-13-FreeRTOS_Worksheets
+# Ignore build artifacts, SDK files, IDE settings, and OS temp files
+
+## ESP-IDF / general embedded build artifacts
+build/
+build_*/
+*_build/
+sdkconfig
+sdkconfig.old
+sdkconfig.*.backup
+cmake_build/
+CMakeFiles/
+CMakeCache.txt
+Makefile
+build
+*.elf
+*.bin
+*.hex
+*.map
+*.img
+*.axf
+*.o
+*.d
+
+## PlatformIO
+.pio/
+
+## Espressif / IDF tools
+.idf/
+.espressif/
+
+## VS Code
+.vscode/
+*.code-workspace
+
+## CLion
+.idea/
+
+## Xcode
+*.xcworkspace
+
+## Visual Studio temporary files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## macOS
+.DS_Store
+.AppleDouble
+._*
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Editor swap / backup files
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+## Logs
+*.log
+
+## Python virtualenv / pipenv
+venv/
+env/
+.venv/
+Pipfile.lock
+
+## Coverage / testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+## Misc
+node_modules/
+dist/
+coverage/
