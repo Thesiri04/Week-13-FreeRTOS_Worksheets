@@ -258,6 +258,6 @@ void app_main(void)
     ESP_LOGI("MAIN", "2. Preemptive (comment out cooperative call)");
     
     // Uncomment ONE of the following:
-    test_cooperative_multitasking();  // Test cooperative
-    // test_preemptive_multitasking();       // Test preemptive
+    // test_cooperative_multitasking();  // Test cooperative
+    test_preemptive_multitasking();       // Test preemptive
 }
