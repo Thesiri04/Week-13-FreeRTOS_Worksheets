@@ -18,6 +18,9 @@ volatile uint32_t med_task_count = 0;
 volatile uint32_t low_task_count = 0;
 volatile bool priority_test_running = false;
 
+// Variable to simulate shared resource
+volatile bool shared_resource_busy = false;
+
 // High Priority Task (Priority 5)
 void high_priority_task(void *pvParameters)
 {
@@ -144,6 +147,100 @@ void control_task(void *pvParameters)
     }
 }
 
+// Tasks ที่มี priority เท่ากัน
+void equal_priority_task1(void *pvParameters)
+{
+    int task_id = 1;
+    
+    while (1) {
+        if (priority_test_running) {
+            ESP_LOGI(TAG, "Equal Priority Task %d running", task_id);
+            
+            // Simulate work without yielding
+            for (int i = 0; i < 300000; i++) {
+                volatile int dummy = i;
+            }
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(50)); // Short delay
+    }
+}
+
+void equal_priority_task2(void *pvParameters)
+{
+    int task_id = 2;
+    
+    while (1) {
+        if (priority_test_running) {
+            ESP_LOGI(TAG, "Equal Priority Task %d running", task_id);
+            
+            // Simulate work without yielding
+            for (int i = 0; i < 300000; i++) {
+                volatile int dummy = i;
+            }
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(50)); // Short delay
+    }
+}
+
+void equal_priority_task3(void *pvParameters)
+{
+    int task_id = 3;
+    
+    while (1) {
+        if (priority_test_running) {
+            ESP_LOGI(TAG, "Equal Priority Task %d running", task_id);
+            
+            // Simulate work without yielding
+            for (int i = 0; i < 300000; i++) {
+                volatile int dummy = i;
+            }
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(50)); // Short delay
+    }
+}
+
+// High priority task for Priority Inversion demonstration
+void priority_inversion_high(void *pvParameters)
+{
+    while (1) {
+        if (priority_test_running) {
+            ESP_LOGW(TAG, "High priority task needs shared resource");
+            
+            // Wait for shared resource
+            while (shared_resource_busy) {
+                ESP_LOGW(TAG, "High priority BLOCKED by low priority!");
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
+            
+            ESP_LOGI(TAG, "High priority task got resource");
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+// Low priority task for Priority Inversion demonstration
+void priority_inversion_low(void *pvParameters)
+{
+    while (1) {
+        if (priority_test_running) {
+            ESP_LOGI(TAG, "Low priority task using shared resource");
+            shared_resource_busy = true;
+            
+            // Simulate long resource usage
+            vTaskDelay(pdMS_TO_TICKS(2000));
+            
+            shared_resource_busy = false;
+            ESP_LOGI(TAG, "Low priority task released resource");
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(3000));
+    }
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "=== FreeRTOS Priority Scheduling Demo ===");
@@ -175,6 +272,11 @@ void app_main(void)
     xTaskCreate(medium_priority_task, "MedPrio", 3072, NULL, 3, NULL);
     xTaskCreate(low_priority_task, "LowPrio", 3072, NULL, 1, NULL);
     xTaskCreate(control_task, "Control", 3072, NULL, 4, NULL);
+    xTaskCreate(equal_priority_task1, "Equal1", 2048, NULL, 2, NULL);
+    xTaskCreate(equal_priority_task2, "Equal2", 2048, NULL, 2, NULL);
+    xTaskCreate(equal_priority_task3, "Equal3", 2048, NULL, 2, NULL);
+    xTaskCreate(priority_inversion_high, "PrioInvHigh", 2048, NULL, 5, NULL); // High priority
+    xTaskCreate(priority_inversion_low, "PrioInvLow", 2048, NULL, 1, NULL);  // Low priority
     
     ESP_LOGI(TAG, "Press button to start priority test");
     ESP_LOGI(TAG, "Watch LEDs: GPIO2=High, GPIO4=Med, GPIO5=Low priority");
