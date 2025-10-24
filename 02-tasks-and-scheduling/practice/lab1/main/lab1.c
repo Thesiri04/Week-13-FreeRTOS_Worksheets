@@ -286,9 +286,9 @@ void app_main(void)
     ESP_LOGI(TAG, "Creating tasks with different priorities...");
     
     // Create tasks with different priorities
-    xTaskCreate(high_priority_task, "HighPrio", 3072, NULL, 5, NULL);
+    xTaskCreatePinnedToCore(high_priority_task, "HighPrio", 3072, NULL, 5, NULL, 0); // Core 0
     xTaskCreate(medium_priority_task, "MedPrio", 3072, NULL, 3, NULL);
-    xTaskCreate(low_priority_task, "LowPrio", 3072, NULL, 1, NULL);
+    xTaskCreatePinnedToCore(low_priority_task, "LowPrio", 3072, NULL, 1, NULL, 1);   // Core 1
     xTaskCreate(control_task, "Control", 3072, NULL, 4, NULL);
     xTaskCreate(equal_priority_task1, "Equal1", 2048, NULL, 2, NULL);
     xTaskCreate(equal_priority_task2, "Equal2", 2048, NULL, 2, NULL);
