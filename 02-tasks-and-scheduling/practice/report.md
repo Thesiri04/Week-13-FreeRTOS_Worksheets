@@ -14,3 +14,8 @@
 ![alt text](image-3.png)
 ### Ex2
 ![alt text](image-4.png)
+
+## LAB 2 
+### Step 1: Basic Task States Demo
+![alt text](image-5.png)
+![alt text](image-6.png)
