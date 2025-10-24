@@ -29,3 +29,7 @@
 ## Ex 2
 ![alt text](image-10.png)
 TASK_STATES: === SUSPENDING State Demo Task === LED3 ติด
+
+## LAB 2 
+### Step 1:
+![alt text](image-11.png)
