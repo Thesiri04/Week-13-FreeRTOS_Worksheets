@@ -42,6 +42,8 @@ const char* get_state_name(eTaskState state)
 }
 
 void monitor_task_states(void);
+void count_state_change(eTaskState old_state, eTaskState new_state);
+void update_state_display(eTaskState current_state);
 
 // Task สำหรับสาธิต states ต่างๆ
 void state_demo_task(void *pvParameters)
@@ -128,21 +130,28 @@ TaskHandle_t external_delete_handle = NULL;
 void control_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "Control Task started");
-    
+
     bool suspended = false;
     int control_cycle = 0;
     static bool external_deleted = false;
-    
+
+    eTaskState previous_state = eTaskGetState(state_demo_task_handle);
+
     while (1) {
         control_cycle++;
-        
+
         // Check button 1 - Suspend/Resume
         if (gpio_get_level(BUTTON1_PIN) == 0) {
             vTaskDelay(pdMS_TO_TICKS(50)); // Debounce
-            
+
             if (!suspended) {
                 ESP_LOGW(TAG, "=== SUSPENDING State Demo Task ===");
+                eTaskState old_state = eTaskGetState(state_demo_task_handle);
                 vTaskSuspend(state_demo_task_handle);
+                eTaskState new_state = eTaskGetState(state_demo_task_handle);
+                count_state_change(old_state, new_state);
+                update_state_display(new_state);
+
                 gpio_set_level(LED_SUSPENDED, 1);
                 gpio_set_level(LED_RUNNING, 0);
                 gpio_set_level(LED_READY, 0);
@@ -150,37 +159,44 @@ void control_task(void *pvParameters)
                 suspended = true;
             } else {
                 ESP_LOGW(TAG, "=== RESUMING State Demo Task ===");
+                eTaskState old_state = eTaskGetState(state_demo_task_handle);
                 vTaskResume(state_demo_task_handle);
+                eTaskState new_state = eTaskGetState(state_demo_task_handle);
+                count_state_change(old_state, new_state);
+                update_state_display(new_state);
+
                 gpio_set_level(LED_SUSPENDED, 0);
                 suspended = false;
             }
-            
-            // รอให้ปุ่มถูกปล่อย
+
             while (gpio_get_level(BUTTON1_PIN) == 0) {
                 vTaskDelay(pdMS_TO_TICKS(10));
             }
         }
-        
+
         // Check button 2 - Give semaphore
         if (gpio_get_level(BUTTON2_PIN) == 0) {
             vTaskDelay(pdMS_TO_TICKS(50)); // Debounce
-            
+
             ESP_LOGW(TAG, "=== GIVING SEMAPHORE ===");
             xSemaphoreGive(demo_semaphore);
-            
-            // รอให้ปุ่มถูกปล่อย
+
             while (gpio_get_level(BUTTON2_PIN) == 0) {
                 vTaskDelay(pdMS_TO_TICKS(10));
             }
         }
-        
+
         // แสดงสถานะ task ทุก 3 วินาที
         if (control_cycle % 30 == 0) {
             ESP_LOGI(TAG, "=== TASK STATUS REPORT ===");
-            
-            eTaskState demo_state = eTaskGetState(state_demo_task_handle);
-            ESP_LOGI(TAG, "State Demo Task: %s", get_state_name(demo_state));
-            
+
+            eTaskState current_state = eTaskGetState(state_demo_task_handle);
+            count_state_change(previous_state, current_state);
+            update_state_display(current_state);
+            previous_state = current_state;
+
+            ESP_LOGI(TAG, "State Demo Task: %s", get_state_name(current_state));
+
             // แสดงข้อมูลเพิ่มเติม
             UBaseType_t priority = uxTaskPriorityGet(state_demo_task_handle);
             ESP_LOGI(TAG, "Priority: %d", priority);
@@ -188,9 +204,6 @@ void control_task(void *pvParameters)
             // Stack usage
             UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(state_demo_task_handle);
             ESP_LOGI(TAG, "Stack remaining: %d bytes", stack_remaining * sizeof(StackType_t));
-            
-            // Call monitor_task_states to log detailed task states
-            monitor_task_states();
         }
         
         // ลบ external_delete_task หลังจาก 15 วินาที
@@ -314,6 +327,47 @@ void count_state_change(eTaskState old_state, eTaskState new_state)
                  get_state_name(old_state), 
                  get_state_name(new_state), 
                  state_changes[new_state]);
+    }
+}
+
+// Added function to update state display
+void update_state_display(eTaskState current_state)
+{
+    // Turn off all LEDs first
+    gpio_set_level(LED_RUNNING, 0);
+    gpio_set_level(LED_READY, 0);
+    gpio_set_level(LED_BLOCKED, 0);
+    gpio_set_level(LED_SUSPENDED, 0);
+
+    // Turn on appropriate LED
+    switch (current_state) {
+        case eRunning:
+            gpio_set_level(LED_RUNNING, 1);
+            break;
+        case eReady:
+            gpio_set_level(LED_READY, 1);
+            break;
+        case eBlocked:
+            gpio_set_level(LED_BLOCKED, 1);
+            break;
+        case eSuspended:
+            gpio_set_level(LED_SUSPENDED, 1);
+            break;
+        default:
+            // Blink all LEDs for unknown state
+            for (int i = 0; i < 3; i++) {
+                gpio_set_level(LED_RUNNING, 1);
+                gpio_set_level(LED_READY, 1);
+                gpio_set_level(LED_BLOCKED, 1);
+                gpio_set_level(LED_SUSPENDED, 1);
+                vTaskDelay(pdMS_TO_TICKS(100));
+                gpio_set_level(LED_RUNNING, 0);
+                gpio_set_level(LED_READY, 0);
+                gpio_set_level(LED_BLOCKED, 0);
+                gpio_set_level(LED_SUSPENDED, 0);
+                vTaskDelay(pdMS_TO_TICKS(100));
+            }
+            break;
     }
 }
 

@@ -19,3 +19,13 @@
 ### Step 1: Basic Task States Demo
 ![alt text](image-5.png)
 ![alt text](image-6.png)
+### Step 2: Advanced State Transitions
+![alt text](image-7.png)
+### Step 3: Task State Monitoring
+![alt text](image-8.png)
+
+### Ex1
+![alt text](image-9.png)
+## Ex 2
+![alt text](image-10.png)
+TASK_STATES: === SUSPENDING State Demo Task === LED3 ติด
