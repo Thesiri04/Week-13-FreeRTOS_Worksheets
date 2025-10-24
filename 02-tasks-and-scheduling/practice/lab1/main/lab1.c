@@ -241,6 +241,24 @@ void priority_inversion_low(void *pvParameters)
     }
 }
 
+// Dynamic Priority Demo Task
+void dynamic_priority_demo(void *pvParameters)
+{
+    TaskHandle_t low_task_handle = (TaskHandle_t)pvParameters;
+
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        ESP_LOGW(TAG, "Boosting low priority task to priority 4");
+        vTaskPrioritySet(low_task_handle, 4);
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        ESP_LOGW(TAG, "Restoring low priority task to priority 1");
+        vTaskPrioritySet(low_task_handle, 1);
+    }
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "=== FreeRTOS Priority Scheduling Demo ===");
@@ -277,6 +295,8 @@ void app_main(void)
     xTaskCreate(equal_priority_task3, "Equal3", 2048, NULL, 2, NULL);
     xTaskCreate(priority_inversion_high, "PrioInvHigh", 2048, NULL, 5, NULL); // High priority
     xTaskCreate(priority_inversion_low, "PrioInvLow", 2048, NULL, 1, NULL);  // Low priority
+    // Create dynamic priority demo task
+    xTaskCreate(dynamic_priority_demo, "DynamicPrio", 2048, NULL, 3, NULL);
     
     ESP_LOGI(TAG, "Press button to start priority test");
     ESP_LOGI(TAG, "Watch LEDs: GPIO2=High, GPIO4=Med, GPIO5=Low priority");
