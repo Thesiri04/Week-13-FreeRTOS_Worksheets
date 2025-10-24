@@ -41,6 +41,8 @@ const char* get_state_name(eTaskState state)
     return state_names[5]; // Invalid
 }
 
+void monitor_task_states(void);
+
 // Task สำหรับสาธิต states ต่างๆ
 void state_demo_task(void *pvParameters)
 {
@@ -61,7 +63,7 @@ void state_demo_task(void *pvParameters)
         
         // ทำงานหนักๆ เพื่อแสดง Running state
         for (int i = 0; i < 1000000; i++) {
-            volatile int dummy = i * 2;
+            // Removed unused variable
         }
         
         // State 2: Ready (เมื่อมี task อื่นที่ priority เท่ากัน)
@@ -112,12 +114,15 @@ void ready_state_demo_task(void *pvParameters)
         
         // ทำงานเล็กน้อย
         for (int i = 0; i < 100000; i++) {
-            volatile int dummy = i;
+            // Removed unused variable
         }
         
         vTaskDelay(pdMS_TO_TICKS(150));
     }
 }
+
+// Declared external_delete_handle globally
+TaskHandle_t external_delete_handle = NULL;
 
 // Control task สำหรับควบคุม states
 void control_task(void *pvParameters)
@@ -126,6 +131,7 @@ void control_task(void *pvParameters)
     
     bool suspended = false;
     int control_cycle = 0;
+    static bool external_deleted = false;
     
     while (1) {
         control_cycle++;
@@ -182,6 +188,16 @@ void control_task(void *pvParameters)
             // Stack usage
             UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(state_demo_task_handle);
             ESP_LOGI(TAG, "Stack remaining: %d bytes", stack_remaining * sizeof(StackType_t));
+            
+            // Call monitor_task_states to log detailed task states
+            monitor_task_states();
+        }
+        
+        // ลบ external_delete_task หลังจาก 15 วินาที
+        if (control_cycle == 150 && !external_deleted) {
+            ESP_LOGW(TAG, "Deleting external task");
+            vTaskDelete(external_delete_handle);
+            external_deleted = true;
         }
         
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -222,6 +238,83 @@ void system_monitor_task(void *pvParameters)
     
     free(task_list_buffer);
     free(stats_buffer);
+}
+
+// Task ที่สาธิต self-deletion
+void self_deleting_task(void *pvParameters)
+{
+    int *lifetime = (int *)pvParameters;
+
+    ESP_LOGI(TAG, "Self-deleting task will live for %d seconds", *lifetime);
+
+    for (int i = *lifetime; i > 0; i--) {
+        ESP_LOGI(TAG, "Self-deleting task countdown: %d", i);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    ESP_LOGI(TAG, "Self-deleting task going to DELETED state");
+    vTaskDelete(NULL); // DELETED state
+}
+
+// Task ที่จะถูก delete จากภายนอก
+void external_delete_task(void *pvParameters)
+{
+    int count = 0;
+
+    while (1) {
+        ESP_LOGI(TAG, "External delete task running: %d", count++);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    // จุดนี้จะไม่ถูกเรียกเพราะ task จะถูก delete จากภายนอก
+}
+
+// Added function to monitor task states
+void monitor_task_states(void)
+{
+    ESP_LOGI(TAG, "=== DETAILED TASK STATE MONITOR ===");
+
+    // List of tasks to monitor
+    TaskHandle_t tasks[] = {
+        state_demo_task_handle,
+        control_task_handle,
+        // Add other task handles here
+    };
+
+    const char* task_names[] = {
+        "StateDemo",
+        "Control",
+    };
+
+    int num_tasks = sizeof(tasks) / sizeof(tasks[0]);
+
+    for (int i = 0; i < num_tasks; i++) {
+        if (tasks[i] != NULL) {
+            eTaskState state = eTaskGetState(tasks[i]);
+            UBaseType_t priority = uxTaskPriorityGet(tasks[i]);
+            UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(tasks[i]);
+
+            ESP_LOGI(TAG, "%s: State=%s, Priority=%d, Stack=%d bytes", 
+                     task_names[i], 
+                     get_state_name(state), 
+                     priority, 
+                     stack_remaining * sizeof(StackType_t));
+        }
+    }
+}
+
+// Added state transition counter
+volatile uint32_t state_changes[5] = {0}; // For each state
+
+void count_state_change(eTaskState old_state, eTaskState new_state)
+{
+    if (old_state != new_state && new_state <= eDeleted) {
+        state_changes[new_state]++;
+        ESP_LOGI(TAG, "State change: %s -> %s (Count: %d)", 
+                 get_state_name(old_state), 
+                 get_state_name(new_state), 
+                 state_changes[new_state]);
+    }
 }
 
 void app_main(void)
@@ -267,6 +360,11 @@ void app_main(void)
     xTaskCreate(ready_state_demo_task, "ReadyDemo", 2048, NULL, 3, NULL); // Priority เดียวกัน
     xTaskCreate(control_task, "Control", 3072, NULL, 4, &control_task_handle);
     xTaskCreate(system_monitor_task, "Monitor", 4096, NULL, 1, NULL);
+
+    static int self_delete_time = 10;
+
+    xTaskCreate(self_deleting_task, "SelfDelete", 2048, &self_delete_time, 2, NULL);
+    xTaskCreate(external_delete_task, "ExtDelete", 2048, NULL, 2, &external_delete_handle);
 
     ESP_LOGI(TAG, "All tasks created. Monitoring task states...");
 }
