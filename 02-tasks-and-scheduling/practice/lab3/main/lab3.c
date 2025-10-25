@@ -228,6 +228,74 @@ void recursion_demo_task(void *pvParameters)
     }
 }
 
+// Stack overflow hook function
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    ESP_LOGE("STACK_OVERFLOW", "Task %s has overflowed its stack!", pcTaskName);
+    ESP_LOGE("STACK_OVERFLOW", "System will restart...");
+
+    // Blink warning LED rapidly before restart
+    for (int i = 0; i < 20; i++) {
+        gpio_set_level(LED_WARNING, 1);
+        vTaskDelay(pdMS_TO_TICKS(25));
+        gpio_set_level(LED_WARNING, 0);
+        vTaskDelay(pdMS_TO_TICKS(25));
+    }
+
+    // Force restart
+    esp_restart();
+}
+
+// Optimized version ของ heavy task
+void optimized_heavy_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Optimized Heavy Task started");
+    
+    // ใช้ heap แทน stack สำหรับ large data
+    char *large_buffer = malloc(1024);
+    int *large_numbers = malloc(200 * sizeof(int));
+    char *another_buffer = malloc(512);
+    
+    if (!large_buffer || !large_numbers || !another_buffer) {
+        ESP_LOGE(TAG, "Failed to allocate heap memory");
+        free(large_buffer);
+        free(large_numbers);
+        free(another_buffer);
+        vTaskDelete(NULL);
+        return;
+    }
+    
+    int cycle = 0;
+    
+    while (1) {
+        cycle++;
+        
+        ESP_LOGI(TAG, "Optimized task cycle %d: Using heap instead of stack", cycle);
+        
+        // ใช้ heap memory
+        memset(large_buffer, 'Y', 1023);
+        large_buffer[1023] = '\0';
+        
+        for (int i = 0; i < 200; i++) {
+            large_numbers[i] = i * cycle;
+        }
+        
+        snprintf(another_buffer, 512, "Optimized cycle %d", cycle);
+        
+        // Stack usage should be much lower now
+        UBaseType_t stack_remaining = uxTaskGetStackHighWaterMark(NULL);
+        ESP_LOGI(TAG, "Optimized task stack: %d bytes remaining", 
+                 stack_remaining * sizeof(StackType_t));
+        
+        vTaskDelay(pdMS_TO_TICKS(4000));
+    }
+    
+    // Clean up (จริงๆ แล้วจุดนี้จะไม่ถูกเรียก)
+    free(large_buffer);
+    free(large_numbers);
+    free(another_buffer);
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "=== FreeRTOS Stack Monitoring Demo ===");
@@ -279,7 +347,13 @@ void app_main(void)
     if (result != pdPASS) {
         ESP_LOGE(TAG, "Failed to create stack monitor task");
     }
-    
+
+    // Optimized heavy task using heap
+    result = xTaskCreate(optimized_heavy_task, "OptimizedHeavyTask", 2048, NULL, 2, NULL);
+    if (result != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create optimized heavy task");
+    }
+
     ESP_LOGI(TAG, "All tasks created. Monitor will report every 3 seconds.");
     ESP_LOGW(TAG, "Watch for stack warnings from Heavy Task!");
 }
