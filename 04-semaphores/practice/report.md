@@ -9,5 +9,7 @@
 ![alt text](image-5.png)
 
 # Lab3:
-
+![alt text](image-6.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
 
